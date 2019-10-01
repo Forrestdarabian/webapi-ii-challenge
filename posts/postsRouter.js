@@ -11,6 +11,26 @@ router.get("/", (req, res) => {
     });
 });
 
+router.post("/", (req, res) => {
+  const { title, contents } = req.body;
+  if (!title || !contents) {
+    return res.status(400).json({ error: "Error with Title/Contents" });
+  }
+  db.insert({ title, contents })
+    .then(({ id }) => {
+      db.findById(id).then(([post]) => {
+        res.status(201).json(post);
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({ error: "Error inserting post" });
+    })
+    .catch(err => {
+      console.log(err);
+      res.status(500).json({ error: "Error getting post" });
+    });
+});
 router.get("/:id", (req, res) => {
   const { id } = req.params;
   db.findById(id).then(post => {

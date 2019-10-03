@@ -18,17 +18,18 @@ router.post("/", (req, res) => {
   }
   db.insert({ title, contents })
     .then(({ id }) => {
-      db.findById(id, res).then(([post]) => {
-        res.status(201).json(post);
-      });
+      db.findById(id, res)
+        .then(([post]) => {
+          res.status(201).json(post);
+        })
+        .catch(err => {
+          console.log(err);
+          res.status(500).json({ error: "Error inserting post" });
+        });
     })
     .catch(err => {
       console.log(err);
       res.status(500).json({ error: "Error getting post" });
-    })
-    .catch(err => {
-      console.log(err);
-      res.status(500).json({ error: "Error inserting post" });
     });
 });
 router.get("/:id", (req, res) => {
@@ -46,14 +47,20 @@ router.get("/:id", (req, res) => {
 router.put("/:id", (req, res) => {
   const { id } = req.params;
   const { title, contents } = req.body;
-
   if (!title && !contents) {
-    return res.status(400).json({ error: "Error, must add changes" });
+    return res
+      .status(400)
+      .json({ error: "Error, must include title and contents" });
   }
+  console.log(req.body);
   db.update(id, { title, contents })
     .then(updated => {
-      if (updated) {
-        return res.status(400).json({ error: "Error, must add changes" });
+      if (updated === 1) {
+        db.findById(id).then(post => {
+          res.status(200).json(post);
+        });
+        // res.status().json({ error: "Error, must add changes" });
+        console.log(updated);
       } else {
         res.status(404).json({ error: "Post with id does not exist" });
       }
@@ -100,10 +107,6 @@ router.get("/:post_id/comments", (req, res) => {
 router.post("/:post_id/comments", (req, res) => {
   const { post_id } = req.params;
   const { text } = req.body;
-
-  if (text === "" || typeof text !== "string") {
-    return res.status(400).json({ error: "Comment requires text" });
-  }
 
   db.insertComment({ text, post_id })
     .then(({ id: comment_id }) => {
